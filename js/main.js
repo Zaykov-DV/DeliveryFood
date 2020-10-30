@@ -93,14 +93,23 @@ const restaurants = document.querySelector('.restaurants')
 const menu = document.querySelector('.menu')
 const cardsMenu = document.querySelector('.cards-menu')
 
+const restaurantTitle = document.querySelector('.restaurant-title')
+const restaurantRating = document.querySelector('.rating')
+const restaurantPrice = document.querySelector('.price')
+const restaurantCategory = document.querySelector('.category')
+
 
 // create card
 function createCardRestaurant(restaurant) {
   // get items from json
   const { image, kitchen, name, price, products, stars, time_of_delivery: timeOfDelivery } = restaurant
+  // header info
+  const cardRestaurant = document.createElement('a')
+  cardRestaurant.className = 'card card-restaurant'
+  cardRestaurant.products = products
+  cardRestaurant.info = { kitchen, name, price, stars }
 
   const card = `
-		<a class="card card-restaurant" data-products="${products}">
 		   <img src="${image}" alt="image" class="card-image"/>
 		   <div class="card-text">
 			   <div class="card-heading">
@@ -116,13 +125,15 @@ function createCardRestaurant(restaurant) {
 		</a>
   `
   // add card in the end of all cards
-  cardsRestaurants.insertAdjacentHTML('beforeend', card)
+  cardRestaurant.insertAdjacentHTML('beforeend', card)
+  cardsRestaurants.insertAdjacentElement('beforeend', cardRestaurant)
+
 }
 
 //card
 function createCardGood(goods) {
   const card = document.createElement('div'),
-      { description, id, image, name, price  } = goods
+      { description, image, name, price  } = goods
   card.className = 'card'
   console.log(card)
 
@@ -162,8 +173,14 @@ function openGoods(event) {
       containerPromo.classList.add('hide')
       restaurants.classList.add('hide')
       menu.classList.remove('hide')
+      // header info
+      const { kitchen, name, price, stars, id } = restaurant.info
+      restaurantTitle.textContent = name
+      restaurantRating.textContent = stars
+      restaurantPrice.textContent = `От ${price} ₽`
+      restaurantCategory.textContent = kitchen
       //create menu
-      getData(`./db/${restaurant.dataset.products}`)
+      getData(`./db/${restaurant.products}`)
           .then((data) => {
             data.forEach(createCardGood)
           })
@@ -223,9 +240,58 @@ function init () {
   checkAuth()
   // open goods
   cardsRestaurants.addEventListener('click', openGoods)
-  //
+  //search
+  inputSearch.addEventListener('keypress', function (event) {
+    if (event.charCode === 13) {
+      const value = event.target.value.trim()
+      // check value is not empty
+      if (!value) {
+        event.target.style.backgroundColor = 'red'
+        event.target.value = ""
+        setTimeout(() => event.target.style.backgroundColor = '', 1500 )
+        return
+      }
+      // get data from json
+      getData('./db/partners.json')
+          .then((data) => {
+            return data.map(function (partner) {
+              return partner.products
+            })
+          })
+          .then((linksProduct) => {
+            linksProduct.forEach(function (link) {
+              getData(`./db/${link}`)
+                  .then((data) => {
+                    // filter results
+                    const resultSearch = data.filter(function (item) {
+                      const name = item.name.toLowerCase()
+                      return name.includes(value.toLowerCase())
+                    }
+                    )
+                    //resets
+                    cardsMenu.textContent = ''
+                    containerPromo.classList.add('hide')
+                    restaurants.classList.add('hide')
+                    menu.classList.remove('hide')
+                    // results
+                    restaurantTitle.textContent = 'Результат поиска'
+                    restaurantRating.textContent = ""
+                    restaurantPrice.textContent = ""
+                    restaurantCategory.textContent = ""
+                    // data
+                    resultSearch.forEach(createCardGood)
+                  })
+            })
+          })
+    }
+  })
+  // modals
   cartButton.addEventListener("click", toggleModal);
   close.addEventListener("click", toggleModal);
 }
+
+//search
+const inputSearch = document.querySelector('.input-search')
+
 
 init()
