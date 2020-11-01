@@ -20,26 +20,46 @@ const buttonOut = document.querySelector('.button-out')
 let login = localStorage.getItem('deliveryFood')
 
 // basket
-let cart = []
+// key for local storage
+const cart = JSON.parse(localStorage.getItem(`deliveryFood_${login}`)) || []
+
+function saveCart() {
+  localStorage.setItem(`deliveryFood_${login}`, JSON.stringify(cart))
+}
+function downloadCart() {
+  if (localStorage.getItem(`deliveryFood_${login}`, JSON.stringify(cart))) {
+    const data = JSON.parse(localStorage.getItem(`deliveryFood_${login}`))
+    cart.push(...data)
+  }
+}
 
 function toggleModalAuth () {
   modalAuth.classList.toggle('is-open')
   loginInput.style.borderColor = ''
 }
 
+// return menu when logout
+function returnMainMenu () {
+  containerPromo.classList.remove('hide')
+  restaurants.classList.remove('hide')
+  menu.classList.add('hide')
+}
 // IF LOG IN
 function authorized() {
 
   function logOut() {
+    // reset login and store
     login = null
+    cart.length = 0
     localStorage.removeItem('deliveryFood')
-    // reset
+    // reset style
     buttonAuth.style.display = ''
     userName.style.display = ''
     buttonOut.style.display = ''
     cartButton.style.display = ''
     buttonOut.removeEventListener('click', logOut)
     checkAuth()
+    returnMainMenu()
   }
 
     console.log('Авторизован')
@@ -55,16 +75,18 @@ function authorized() {
     buttonOut.addEventListener('click', logOut)
 }
 // IF LOG OUT
+
 function notAuthorized() {
-  console.log('Не авторизован')
   function logIn (event) {
     event.preventDefault()
+
     // check for login field isn't empty
     if (login = loginInput.value.trim()) {
       // save user in localStorage
       localStorage.setItem('deliveryFood', login)
 
       toggleModalAuth()
+      downloadCart()
       buttonAuth.removeEventListener('click', toggleModalAuth)
       closeAuth.removeEventListener('click', toggleModalAuth)
       logInForm.removeEventListener('submit', logIn)
@@ -257,10 +279,11 @@ const getData = async function (url) {
           count: 1
         })
       }
+      saveCart()
     }
   }
 
-  // render backet
+  // render basket
   const modalBody = document.querySelector('.modal-body')
   const modalPrice = document.querySelector('.modal-pricetag')
   function renderCart() {
@@ -284,6 +307,7 @@ const getData = async function (url) {
 
     const totalPrice = cart.reduce((result, item) => result + (parseFloat(item.cost) * item.count) , 0 )
     modalPrice.textContent = totalPrice + ' ₽'
+    saveCart()
   }
 
   function changeCount(event) {
